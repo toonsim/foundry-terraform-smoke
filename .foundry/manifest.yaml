@@ -15,6 +15,18 @@ capabilityVariants:
   - id: infra:terraform
     version: 0
     statusAtGeneration: scaffolded
+  - id: aws:account
+    version: 0
+    statusAtGeneration: scaffolded
+  - id: secrets:onepassword
+    version: 0
+    statusAtGeneration: scaffolded
+  - id: aws:terraform-identity
+    version: 0
+    statusAtGeneration: scaffolded
+  - id: infra:terraform-s3-backend
+    version: 0
+    statusAtGeneration: scaffolded
 localCapabilities: []
 providers: {}
 environments:

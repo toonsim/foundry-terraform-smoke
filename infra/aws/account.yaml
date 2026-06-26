@@ -1,0 +1,6 @@
+aws:
+  accountId: "273613910635"
+  region: "eu-west-1"
+  profile: "agent-admin"
+  credentialSource: "shared-config"
+  liveIdentityCheck: "opt-in"

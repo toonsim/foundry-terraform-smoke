@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+set -eu
+
+root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+config="$root/infra/aws/account.yaml"
+
+fail() {
+  echo "$*" >&2
+  exit 1
+}
+
+test -f "$config" || fail "missing AWS account config: infra/aws/account.yaml"
+
+account_id="$(sed -n 's/^  accountId: "\([0-9][0-9]*\)"$/\1/p' "$config")"
+region="$(sed -n 's/^  region: "\([^"]*\)"$/\1/p' "$config")"
+profile="$(sed -n 's/^  profile: "\([^"]*\)"$/\1/p' "$config")"
+
+printf '%s' "$account_id" | grep -Eq '^[0-9]{12}$' || fail "AWS accountId must be a 12 digit value"
+test "$account_id" != "000000000000" || fail "AWS accountId must not be the all-zero placeholder"
+printf '%s' "$region" | grep -Eq '^[a-z]{2}(-[a-z]+)+-[0-9]+$' || fail "AWS region must look like eu-west-1"
+test -n "$profile" || fail "AWS profile must be configured"
+
+if [ "${FOUNDRY_AWS_LIVE_CHECK:-0}" = "1" ]; then
+  command -v aws >/dev/null 2>&1 || fail "aws CLI is required when FOUNDRY_AWS_LIVE_CHECK=1"
+  actual="$(aws sts get-caller-identity --profile "$profile" --query Account --output text)"
+  test "$actual" = "$account_id" || fail "AWS CLI profile $profile resolved account $actual, expected $account_id"
+else
+  echo "live AWS identity check skipped; set FOUNDRY_AWS_LIVE_CHECK=1 to verify sts identity"
+fi

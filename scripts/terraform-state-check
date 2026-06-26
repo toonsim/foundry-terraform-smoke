@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+set -eu
+
+root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+backend="$root/infra/terraform/backend.tf"
+account_config="$root/infra/aws/account.yaml"
+
+fail() {
+  echo "$*" >&2
+  exit 1
+}
+
+test -f "$backend" || fail "missing Terraform backend file: infra/terraform/backend.tf"
+test -f "$account_config" || fail "missing AWS account config: infra/aws/account.yaml"
+
+"$root/scripts/aws-check" >/dev/null
+"$root/scripts/terraform-identity-check" >/dev/null
+
+account_id="$(sed -n 's/^  accountId: "\([0-9][0-9]*\)"$/\1/p' "$account_config")"
+region="$(sed -n 's/^  region: "\([^"]*\)"$/\1/p' "$account_config")"
+profile="$(sed -n 's/^  profile: "\([^"]*\)"$/\1/p' "$account_config")"
+
+grep -Fq 'backend "s3"' "$backend" || fail "Terraform backend must be s3"
+grep -Fq 'use_lockfile   = true' "$backend" || fail "S3 backend must use Terraform lockfiles"
+grep -Fq 'encrypt        = true' "$backend" || fail "S3 backend must enable encryption"
+grep -Fq "allowed_account_ids = [\"$account_id\"]" "$backend" || fail "S3 backend must pin the expected AWS account id"
+
+for forbidden in dynamodb_table access_key secret_key token; do
+  if grep -Fq "$forbidden" "$backend"; then
+    fail "Terraform S3 backend must not commit $forbidden"
+  fi
+done
+
+if [ "${FOUNDRY_TERRAFORM_LIVE_PLAN:-0}" = "1" ]; then
+  command -v terraform >/dev/null 2>&1 || fail "terraform CLI is required when FOUNDRY_TERRAFORM_LIVE_PLAN=1"
+  tfroot="$root/infra/terraform"
+  AWS_PROFILE="$profile" AWS_REGION="$region" AWS_SDK_LOAD_CONFIG=1 terraform -chdir="$tfroot" init
+  AWS_PROFILE="$profile" AWS_REGION="$region" AWS_SDK_LOAD_CONFIG=1 terraform -chdir="$tfroot" plan
+else
+  echo "live Terraform init/plan skipped; set FOUNDRY_TERRAFORM_LIVE_PLAN=1 to verify the remote backend"
+fi

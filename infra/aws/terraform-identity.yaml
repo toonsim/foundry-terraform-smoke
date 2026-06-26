@@ -1,0 +1,9 @@
+terraformIdentity:
+  mode: "github-oidc"
+  roleArn: "arn:aws:iam::273613910635:role/foundry-terraform-smoke"
+  region: "eu-west-1"
+  audience: "sts.amazonaws.com"
+  githubSubject: "repo:toonsim/foundry-terraform-smoke:ref:refs/heads/main"
+  bootstrap:
+    source: "1password"
+    bootstrapRef: "op://Foundry Admin/aws-terraform-bootstrap/role-provisioner"
