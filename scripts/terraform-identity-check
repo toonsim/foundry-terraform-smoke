@@ -27,7 +27,7 @@ grep -Fq '"Action": "sts:AssumeRoleWithWebIdentity"' "$trust_policy" || fail "tr
 grep -Fq '"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"' "$trust_policy" || fail "trust policy must pin OIDC audience"
 grep -Fq "\"token.actions.githubusercontent.com:sub\": \"$github_subject\"" "$trust_policy" || fail "trust policy must pin the GitHub subject"
 grep -Fq 'id-token: write' "$workflow" || fail "workflow example must request id-token write"
-grep -Fq 'aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502' "$workflow" || fail "workflow example must pin configure-aws-credentials by commit"
+grep -Fq 'aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b' "$workflow" || fail "workflow example must pin configure-aws-credentials by commit"
 
 for forbidden in access_key secret_key AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
   if grep -R -Fq "$forbidden" "$identity" "$trust_policy" "$workflow"; then
