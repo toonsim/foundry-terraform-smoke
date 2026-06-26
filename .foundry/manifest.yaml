@@ -1,0 +1,51 @@
+schemaVersion: 1
+foundry:
+  repository: git@github.com:toonsim/project-foundry.git
+  commit: 4cb694a865c4f1c4017b008cb02a6e423d66bdff
+  generatedAt: 2026-06-26T13:32:14Z
+child:
+  name: foundry-terraform-smoke
+  repository: null
+  defaultBranch: main
+recipe:
+  family: foundry-foundation
+  name: foundation
+  version: 0
+capabilityVariants:
+  - id: infra:terraform
+    version: 0
+    statusAtGeneration: scaffolded
+localCapabilities: []
+providers: {}
+environments:
+  profile: lean
+  types:
+    - local
+generated:
+  strategy: scaffold
+  files: []
+quality:
+  gates:
+    fast:
+      command: ./scripts/gate.sh fast
+      budgetSeconds: 10
+    medium:
+      command: ./scripts/gate.sh medium
+      budgetSeconds: 30
+    full:
+      command: ./scripts/gate.sh full
+      budgetSeconds: 300
+    release:
+      command: ./scripts/gate.sh release
+      budgetSeconds: null
+  bindings:
+    preCommit: fast
+    prePush: medium
+    draftPr: medium
+    readyForReview: full
+    merge: full
+    releasePromotion: release
+drift:
+  accepted: []
+propagation:
+  appliedChangePackages: []

@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+set -eu
+
+root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+tfroot="$root/infra/terraform"
+
+for file in README.md versions.tf main.tf variables.tf outputs.tf .gitignore; do
+  test -f "$tfroot/$file" || {
+    echo "missing Terraform file: infra/terraform/$file" >&2
+    exit 1
+  }
+done
+
+if find "$tfroot" \( -name "*.tfstate" -o -name "*.tfstate.*" -o -name ".terraform" \) | grep -q .; then
+  echo "Terraform state or cache files must not be committed under infra/terraform" >&2
+  exit 1
+fi
+
+if command -v terraform >/dev/null 2>&1; then
+  terraform -chdir="$tfroot" fmt -check -recursive
+else
+  echo "terraform not installed; skipped terraform fmt"
+fi

@@ -1,0 +1,8 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.foundry/gates/
+node_modules/
+dist/
+coverage/
