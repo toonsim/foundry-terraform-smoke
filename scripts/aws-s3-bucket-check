@@ -1,0 +1,52 @@
+#!/usr/bin/env sh
+set -eu
+
+root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+account_config="$root/infra/aws/account.yaml"
+provider="$root/infra/terraform/aws-provider.tf"
+bucket_tf="$root/infra/terraform/aws-s3-bucket.tf"
+
+fail() {
+  echo "$*" >&2
+  exit 1
+}
+
+test -f "$account_config" || fail "missing AWS account config: infra/aws/account.yaml"
+test -f "$provider" || fail "missing AWS provider file: infra/terraform/aws-provider.tf"
+test -f "$bucket_tf" || fail "missing S3 bucket resource file: infra/terraform/aws-s3-bucket.tf"
+
+"$root/scripts/terraform-state-check" >/dev/null
+
+account_id="$(sed -n 's/^  accountId: "\([0-9][0-9]*\)"$/\1/p' "$account_config")"
+region="$(sed -n 's/^  region: "\([^"]*\)"$/\1/p' "$account_config")"
+profile="$(sed -n 's/^  profile: "\([^"]*\)"$/\1/p' "$account_config")"
+bucket="$(sed -n 's/^  bucket        = "\([^"]*\)"$/\1/p' "$bucket_tf")"
+
+grep -Fq 'source  = "hashicorp/aws"' "$provider" || fail "AWS provider source must be hashicorp/aws"
+grep -Fq 'version = "= 6.52.0"' "$provider" || fail "AWS provider version must be exactly pinned"
+grep -Fq "region              = \"$region\"" "$provider" || fail "AWS provider region must match aws:account"
+grep -Fq "allowed_account_ids = [\"$account_id\"]" "$provider" || fail "AWS provider must pin allowed_account_ids"
+grep -Fq 'resource "aws_s3_bucket" "foundry_managed"' "$bucket_tf" || fail "S3 bucket resource must exist"
+grep -Fq 'status = "Enabled"' "$bucket_tf" || fail "S3 bucket versioning must be enabled"
+grep -Fq 'sse_algorithm = "AES256"' "$bucket_tf" || fail "S3 bucket encryption must use AES256"
+
+for public_block in block_public_acls ignore_public_acls block_public_policy restrict_public_buckets; do
+  grep -Eq "$public_block[[:space:]]*=[[:space:]]*true" "$bucket_tf" || fail "S3 bucket public access block missing $public_block"
+done
+
+for forbidden in access_key secret_key token; do
+  if grep -R -Fq "$forbidden" "$provider" "$bucket_tf"; then
+    fail "S3 bucket capability must not commit $forbidden"
+  fi
+done
+
+if [ "${FOUNDRY_AWS_S3_BUCKET_LIVE_CHECK:-0}" = "1" ]; then
+  command -v aws >/dev/null 2>&1 || fail "aws CLI is required when FOUNDRY_AWS_S3_BUCKET_LIVE_CHECK=1"
+  test -n "$bucket" || fail "S3 bucket name could not be parsed"
+  aws s3api head-bucket --bucket "$bucket" --profile "$profile" >/dev/null
+  aws s3api get-bucket-versioning --bucket "$bucket" --profile "$profile" --query Status --output text | grep -Fxq Enabled || fail "live S3 bucket versioning must be Enabled"
+  aws s3api get-bucket-encryption --bucket "$bucket" --profile "$profile" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text | grep -Fxq AES256 || fail "live S3 bucket encryption must be AES256"
+  aws s3api get-public-access-block --bucket "$bucket" --profile "$profile" --query 'PublicAccessBlockConfiguration.[BlockPublicAcls,IgnorePublicAcls,BlockPublicPolicy,RestrictPublicBuckets]' --output text | grep -Fxq 'True	True	True	True' || fail "live S3 bucket public access block must be enabled"
+else
+  echo "live S3 bucket check skipped; set FOUNDRY_AWS_S3_BUCKET_LIVE_CHECK=1 after terraform apply"
+fi

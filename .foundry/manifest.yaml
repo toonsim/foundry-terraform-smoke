@@ -27,6 +27,9 @@ capabilityVariants:
   - id: infra:terraform-s3-backend
     version: 0
     statusAtGeneration: scaffolded
+  - id: aws:s3-bucket
+    version: 0
+    statusAtGeneration: scaffolded
 localCapabilities: []
 providers: {}
 environments:

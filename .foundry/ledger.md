@@ -61,3 +61,12 @@
 - Related files: .foundry/bootstrap/aws-terraform-s3-backend/plan.sh
 - Decision: Applied AWS Terraform S3 backend bootstrap plan.
 - Reason: The live AWS bootstrap script was run only after Foundry regenerated and validated the reviewable plan.
+
+
+## 2026-06-26.capability-addition.aws-s3-bucket
+
+- Kind: capability-addition
+- Change Package: none
+- Related files: .foundry/manifest.yaml
+- Decision: Added Foundry Capability aws:s3-bucket.
+- Reason: Capability Addition records the selected Foundry-owned capability before provider automation is introduced.
