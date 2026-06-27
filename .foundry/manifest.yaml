@@ -30,6 +30,9 @@ capabilityVariants:
   - id: aws:s3-bucket
     version: 0
     statusAtGeneration: scaffolded
+  - id: aws:ssm-parameter
+    version: 0
+    statusAtGeneration: scaffolded
 localCapabilities: []
 providers: {}
 environments:

@@ -70,3 +70,12 @@
 - Related files: .foundry/manifest.yaml
 - Decision: Added Foundry Capability aws:s3-bucket.
 - Reason: Capability Addition records the selected Foundry-owned capability before provider automation is introduced.
+
+
+## 2026-06-27.capability-addition.aws-ssm-parameter
+
+- Kind: capability-addition
+- Change Package: none
+- Related files: .foundry/manifest.yaml
+- Decision: Added Foundry Capability aws:ssm-parameter.
+- Reason: Capability Addition records the selected Foundry-owned capability before provider automation is introduced.
