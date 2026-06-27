@@ -33,6 +33,9 @@ capabilityVariants:
   - id: aws:ssm-parameter
     version: 0
     statusAtGeneration: scaffolded
+  - id: aws:secrets-manager-secret
+    version: 0
+    statusAtGeneration: scaffolded
 localCapabilities: []
 providers: {}
 environments:
